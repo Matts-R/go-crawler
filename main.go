@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/anthdm/hollywood/actor"
@@ -119,23 +120,22 @@ func extractLinks(body io.Reader) ([]string, error) {
 	}
 }
 
-func removeDuplicateLinks(links []*url.URL) []string {
+func removeDuplicateLinks(links []string) []string {
 	seen := make(map[string]bool)
-	unique := make([]string, 0, len(links))
+	unique := make([]string, 0)
 
 	for _, link := range links {
-		l := link.String()
-		if !seen[l] {
-			unique = append(unique, l)
-			seen[l] = true
+		if !seen[link] {
+			unique = append(unique, link)
+			seen[link] = true
 		}
 	}
 
 	return unique
 }
 
-func doVisit(link string) ([]string, error) {
-	baseUrl, err := url.Parse(link)
+func doVisit(baseLink string) ([]string, error) {
+	baseUrl, err := url.Parse(baseLink)
 
 	if err != nil {
 		return []string{}, err
@@ -153,6 +153,13 @@ func doVisit(link string) ([]string, error) {
 		return []string{}, err
 	}
 
+	for i, link := range links {
+		if !strings.Contains(link, "https") {
+			links[i] = baseLink + link
+		}
+	}
+
+	links = removeDuplicateLinks(links)
 	return links, nil
 
 	// for _, link := range links {
